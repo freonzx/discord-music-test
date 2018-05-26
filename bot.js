@@ -87,22 +87,32 @@ client.on('message', function(message) {
         message2 += "```";
         message.channel.send(message2);
     } else if (mess.startsWith(prefix + "leave")) {
-      guilds[message.guild.id].isPlaying = false;
-
-      guilds[message.guild.id].VoiceConnection.disconnect();
+      // guilds[message.guild.id].isPlaying = false;
+      // guilds[message.guild.id].VoiceConnection.disconnect();
+    } else if (mess.startsWith(prefix + "bro")) {
+        message.reply(" você é branco brooo não fala comigo.");
     }
 
 });
 
-
+setInterval(function() {
+  var date = new Date();
+  if ( date.getSeconds() === 0 ) {
+    fazSol();
+  }
+}, 1000);
 
 client.on('ready', function() {
     console.log("I am ready!");
-    client.user.setActivity('\'>play\' to use me', { type: 'LISTENING' });
+    client.user.setActivity('Skrrt skrrt skrrt skrrt', { type: 'LISTENING' });
 });
 
 function skip_song(message) {
     guilds[message.guild.id].dispatcher.end();
+}
+
+function fazSol() {
+    message.channel.send("Brooooooooooooo, faz soooooooooooooooooool.");
 }
 
 function playMusic(id, message) {
