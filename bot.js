@@ -112,7 +112,7 @@ function skip_song(message) {
 }
 
 function fazSol() {
-    message.channel.send("Brooooooooooooo, faz soooooooooooooooooool.");
+    guilds[message.guild.id].channel.send("Brooooooooooooo, faz soooooooooooooooooool.");
 }
 
 function playMusic(id, message) {
