@@ -1,6 +1,6 @@
-# Exploring Discord BOT in Node. 
+# Exploring Discord BOT in Node.
 
-##Commands
+## Commands
 * Say - `Make BOT say something`
 * Play/Skip/Leave/Queue - `Music related commands`
 * Price - `Gets CSGO Item price`
