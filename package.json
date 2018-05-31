@@ -7,13 +7,20 @@
     "start": "node bot.js"
   },
   "dependencies": {
+    "currency.js": "^1.1.4",
     "discord.js": "^11.3.2",
     "ffmpeg-binaries": "^3.2.2-3",
+    "fortnite": "^4.1.1",
     "fs": "0.0.1-security",
     "get-youtube-id": "^1.0.0",
+    "npm": "^6.1.0",
     "opusscript": "0.0.6",
     "package.json": "^2.0.1",
+    "password": "^0.1.1",
+    "pornsearch": "^2.4.2",
     "request": "^2.87.0",
+    "steam-market-pricing": "^2.0.0",
+    "steam-user-inventory": "^4.2.0",
     "youtube-info": "^1.2.0",
     "ytdl-core": "^0.20.4"
   }

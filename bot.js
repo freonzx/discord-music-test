@@ -1,213 +1,76 @@
 const Discord = require("discord.js");
 const client = new Discord.Client();
-const ytdl = require("ytdl-core");
-const request = require("request");
 const fs = require("fs");
-const getYouTubeID = require("get-youtube-id");
-const fetchVideoInfo = require("youtube-info");
-//var config = JSON.parse(fs.readFileSync('./settings.json', 'utf-8'));
+const embeds = require("./embeds.js");
+client.commands = new Discord.Collection();
 
-const bot_controller = "133504218391642113";
+//const config = JSON.parse(fs.readFileSync('./settings.json', 'utf-8'));
+fs.readdir('./commands/', (err, files) => {
+  if (err) console.log(err);
+
+  let jsfile = files.filter(f => f.split('.').pop() == 'js')
+  if (jsfile.length <= 0){
+    console.log("Didn't find commands to load.");
+    return;
+  }
+
+  jsfile.forEach((f, i) => {
+    let props = require(`./commands/${f}`);
+    console.log(`[+] Command ${f} loaded.`);
+
+    if (Array.isArray(props.help.name)) {
+      props.help.name.forEach( function(item){
+        client.commands.set(item, props);
+      })
+    }else{
+      client.commands.set(props.help.name, props);
+    }
+    //console.log(client.commands);
+  });
+});
+
+//const bot_controller = "133504218391642113";
 const prefix = ">";
-
-var guilds = {};
-
 
 client.login(process.env.BOT_TOKEN);
 
-client.on('message', function(message) {
+client.on('message', async message => {
   const member = message.member;
   const mess = message.content.toLowerCase();
+  const msgcmd = message.content.split(' ')[0].slice(prefix.length);
   const args = message.content.split(' ').slice(1).join(" ");
 
   if (message.channel.type === 'dm') {
     if (message.author.equals(client.user)) return;
     else {
       message.reply('NÃO FALO EM PRIVADO BRO, VAI TOMAR NO CU ARTUR');
-      return
+      return;
     }
   }
 
-  if (!guilds[message.guild.id]) {
-    guilds[message.guild.id] = {
-      queue: [],
-      queueNames: [],
-      isPlaying: false,
-      dispatcher: null,
-      voiceChannel: null,
-      skipReq: 0,
-      skippers: []
-    };
+  //Logging
+  let messTime = message.createdAt.toString().replace('2018','').replace('GMT-0300 (Hora oficial do Brasil)','');
+  if (mess.startsWith(prefix)) console.log(`[*] ${messTime} ${message.author.username}: ${mess}`);
+  //Command Handler
+  if (mess.startsWith(prefix)) {
+    let commandfile = client.commands.get(msgcmd);
+    if (commandfile) commandfile.run(client, message, args, msgcmd);
   }
-
-  if (mess.startsWith(prefix + "play")) {
-    if (message.member.voiceChannel || guilds[message.guild.id].voiceChannel != null) {
-      if (guilds[message.guild.id].queue.length > 0 || guilds[message.guild.id].isPlaying) {
-        getID(args, function(id) {
-          add_to_queue(id, message);
-          fetchVideoInfo(id, function(err, videoInfo) {
-            if (err) throw new Error(err);
-            message.reply(" added to queue: **" + videoInfo.title + "**");
-            guilds[message.guild.id].queueNames.push(videoInfo.title);
-          });
-        });
-      } else {
-        isPlaying = true;
-        getID(args, function(id) {
-          guilds[message.guild.id].queue.push(id);
-          playMusic(id, message);
-          fetchVideoInfo(id, function(err, videoInfo) {
-            if (err) throw new Error(err);
-            guilds[message.guild.id].queueNames.push(videoInfo.title);
-            message.reply(" now playing: **" + videoInfo.title + "**");
-          });
-        });
-      }
-    } else {
-      message.reply(" you need to be in a voice channel!");
-    }
-  } else if (mess.startsWith(prefix + "skip")) {
-    if (guilds[message.guild.id].skippers.indexOf(message.author.id) === -1) {
-      guilds[message.guild.id].skippers.push(message.author.id);
-      guilds[message.guild.id].skipReq++;
-      if (guilds[message.guild.id].skipReq >= Math.ceil((guilds[message.guild.id].voiceChannel.members.size - 1) / 2)) {
-        skip_song(message);
-        message.reply(" your skip has been acknowledged. Skipping now!");
-      } else {
-        message.reply(" your skip has been acknowledged. You need **" + Math.ceil((guilds[message.guild.id].voiceChannel.members.size - 1) / 2) - guilds[message.guild.id].skipReq) = "**  more skip votes!";
-      }
-    } else {
-      message.reply(" you already voted to skip!");
-    }
-  } else if (mess.startsWith(prefix + "queue")) {
-    var message2 = "```";
-    for (var i = 0; i < guilds[message.guild.id].queueNames.length; i++) {
-      var temp = (i + 1) + ": " + guilds[message.guild.id].queueNames[i] + (i === 0 ? "**(Current Song)**" : "") + "\n";
-      if ((message2 + temp).length <= 2000 - 3) {
-        message2 += temp;
-      } else {
-        message2 += "```";
-        message.channel.send(message2);
-        message2 = "```";
-      }
-    }
-    message2 += "```";
-    message.channel.send(message2);
-  } else if (mess.startsWith(prefix + "leave")) {
-    // TODO
-  } else if (mess.startsWith(prefix + "bro")) {
-    message.reply(" você é branco brooo não fala comigo.");
-  } else if (mess.startsWith(prefix + "777")) {
-    message.reply(" 7 7 7 7 AYYY AYY AY AYYYYY.");
-  } else if (mess.startsWith(prefix + "maconha")) {
-    message.channel.send({
-      embed: {
-        color: 3447003,
-        image: {
-          url: "https://scontent.fcgh11-1.fna.fbcdn.net/v/t31.0-8/27355688_152186868911512_3767623590325234762_o.jpg?_nc_cat=0&oh=79e98e3aa8d167e6cbc60606234d4f2f&oe=5B836C1B"
-        },
-        description: member + " EU TENHO MACONHA BRO"
-      }
-    });
-  } else if (mess.startsWith(prefix + "lean")) {
-    message.channel.send({
-      embed: {
-        color: 3447003,
-        image: {
-          url: "https://i.ytimg.com/vi/GHmFaX75zPo/maxresdefault.jpg"
-        },
-        description: "<:lean:449823963762393089>DOUBLE CUP SPRITE CODEIN BROOOOOOOOO AYYYY AY AYYYYYYYYYY.<:lean:449823963762393089>"
-      }
-    });
-  } else if (mess.startsWith(prefix + "hater")) {
-    message.channel.send({
-      embed: {
-        color: 3447003,
-        image: {
-          url: "https://i0.wp.com/corrupcaobrnews.org/wp-content/uploads/2018/05/oculos-raffa-moreira-hype-branco-oval-supreme-bape-palace-D_NQ_NP_762019-MLB26777471409_022018-F.jpg"
-        },
-        description: "EU SOQUEI UM HATER NO SHOPPING QUE FALOU BOSTA"
-      }
-    });
-  } else if (mess.startsWith(prefix + "swag")) {
-    message.reply(" Você não tem swag bro skrrr <:swag:449814696544043009>");
-  } else if (mess.startsWith(prefix + "marquinho")) {
-    message.reply(" Marquinhos é god bro <:lean:449823963762393089>");
-  } else if (mess.startsWith(prefix + "vieira")) {
-    message.reply(" CABEÇA DE LAMPADA BRO AYY AYY AYY AYY");
-  } else if (mess.startsWith(prefix + "choice")) {
-    message.reply("CHOICE você é feio bro, outra cena, outra vivencia, outro tudo Eeeei mlk branco, você sabe que ñ aguenta cmg bro");
-  } else if (mess.startsWith(prefix + "pineaple")) {
-    message.reply(" PAGA O QUE ME DEVE PINEAPLE BRO");
-  } else if (mess === 'show me the way') {
-    message.channel.send({
-      embed: {
-        color: 3447003,
-        author: {
-          name: client.user.username,
-          icon_url: client.user.avatarURL
-        },
-        title: "This is an embed",
-        url: "http://google.com",
-        description: "This is a test embed to showcase what they look like and what they can do.",
-        fields: [{
-            name: "Fields",
-            value: "They can have different fields with small headlines."
-          },
-          {
-            name: "Masked links",
-            value: "You can put [masked links](http://google.com) inside of rich embeds."
-          },
-          {
-            name: "Markdown",
-            value: "You can put all the *usual* **__Markdown__** inside of them."
-          }
-        ],
-        timestamp: new Date(),
-        footer: {
-          icon_url: client.user.avatarURL,
-          text: "© Example"
-        }
-      }
-    });
-  }
-  //COMMANDS
-  else if (mess.startsWith(prefix + "comandos")) {
-    message.reply("Tá aqui minha lista de comandos bro ```\n#bro\n#777\n#maconha\n#lean\n#hater\n#swag\n#marquinho\n#comandos\n#vieira\n#artur\n#choice\n#pineaple\n#codeina\n#play - Toco musicas lagado e fico bugado na sala pra sempre bro skrrrt```");
-  } else if (mess.startsWith(prefix + "codeina")) {
-    message.channel.send({
-      embed: {
-        color: 3447003,
-        image: {
-          url: "https://1.bp.blogspot.com/-6ckvXUBJvSw/Wgzl_rI7d0I/AAAAAAAAZKU/1-lBC5h4OEE0ahHtpZrXoKTbM2fJ0uPigCLcBGAs/s1600/nakd.png"
-        },
-        description: "<:lean:449823963762393089> <3 CODEINA BRO <:lean:449823963762393089>"
-      }
-    });
-  } else if (mess.startsWith(prefix + "artur")) {
-    message.channel.send({
-      embed: {
-        color: 3447003,
-        image: {
-          url: "http://pm1.narvii.com/6833/9ccf3958e8a1d7bbd992c8f5146fe29be4cc7d30v2_00.jpg"
-        },
-        description: "TENTA ME BUGAR AI BRO, VOCÊ É BOBÃO BRO"
-      }
-    });
-  }
-
-    else if (mess.startsWith(prefix)) {
+  //Handles unknown commands
+  else if (mess.startsWith(prefix)) {
     if (message.author.equals(client.user)) return;
     message.reply("Ow chupa meu pal bro, todo mundo gosta de mim bro.");
   }
 });
 
-
+//On Ready
 client.on('ready', function() {
-  console.log("I am ready!");
+  console.log("[*] Online.");
   client.user.setActivity('Skrrt skrrt skrrt skrrt', {
     type: 'LISTENING'
   });
+
+  //setInterval(function(){ console.log(process.memoryUsage()); }, 600 * 1000);
 
   client.guilds.forEach((guild) => { //for each guild the bot is in
     let defaultChannel = "";
@@ -219,58 +82,13 @@ client.on('ready', function() {
       }
     })
     setInterval(function() {
-        const fazSol = {
-          embed: {
-            color: 3447003,
-            image: {
-              url: "http://images.virgula.com.br/2018/01/IMG-20171129-WA0002-855x569.jpg"
-            },
-            description: "BROOOOOOOOOOOOOOOOOOOOOOOO FAZ SOOOOOOOOOOOOOOOOOOL"
-          }
-        };
-        const doubleCup = {
-          embed: {
-            color: 3447003,
-            image: {
-              url: "https://3.bp.blogspot.com/-5zP2-ZilzbQ/WmqoZDwgKLI/AAAAAAAAeo0/A5uFaDoon0MyFBEy_k4xid2cPAPN04VnwCLcBGAs/s1600/mrmrmrdd.png"
-            },
-            description: "DOUBLE CUP SPRITE CODEIN AY AY AY. <:lean:449823963762393089>"
-          }
-        };
-        const todoMundo = {
-          embed: {
-            color: 3447003,
-            image: {
-              url: "https://video-images.vice.com/articles/59f88fa059200c2c307c9140/lede/1509462376008-raffa.jpeg"
-            },
-            description: "TODO MUNDO FALA DE MIM, RAFFA MOREIRA MANO."
-          }
-        };
-        const kurtCobain = {
-          embed: {
-            color: 3447003,
-            image: {
-              url: "https://pbs.twimg.com/profile_images/968467150309675009/gvhc0jw9_400x400.jpg"
-            },
-            description: "WOW, ÓCULOS DO KURT COBAIN"
-          }
-        };
-        const ferClothing = {
-          embed: {
-            color: 3447003,
-            image: {
-              url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTijeHh1Sa3tQGP2RQ782UDXyarHoDI6cMardI8R8IkWtp5CR7G"
-            },
-            description: "FERNVNDX CLOTHING NEGOOOOOOOO AY AY AY"
-          }
-        };
         var textArray = [
-          fazSol,
-          doubleCup,
+          embeds.data.fazSol,
+          embeds.data.doubleCup,
           "SKRRRRT SKRRRT SKRRRRRT <:swag:449814696544043009>",
-          todoMundo,
-          ferClothing,
-          kurtCobain,
+          embeds.data.todoMundo,
+          embeds.data.ferClothing,
+          embeds.data.kurtCobain,
           "JOGUEI CODEINA NA MINHA FANTA <:swag:449814696544043009> <:lean:449823963762393089>",
           "ELES ACHAM MINHA CALÇA APERTADA STYLE ELES SABEM SOU GANGSTA PARADISE <:swag:449814696544043009>",
           "AY, AY, AY, AY, AY AY, AY, AY, AY, AY AY, AY, AY, AY, AY",
@@ -280,74 +98,6 @@ client.on('ready', function() {
         var randomN = Math.floor(Math.random() * textArray.length);
         defaultChannel.send(textArray[randomN]) //send it to whatever channel the bot has permissions to send on
       },
-      60 * 1000);
+      900 * 1000);
   })
 });
-
-function skip_song(message) {
-  guilds[message.guild.id].dispatcher.end();
-}
-
-function playMusic(id, message) {
-  guilds[message.guild.id].voiceChannel = message.member.voiceChannel;
-
-
-
-  guilds[message.guild.id].voiceChannel.join().then(function(connection) {
-    stream = ytdl("https://www.youtube.com/watch?v=" + id, {
-      filter: 'audioonly'
-    });
-    guilds[message.guild.id].skispReq = 0;
-    guilds[message.guild.id].skippers = [];
-
-    guilds[message.guild.id].dispatcher = connection.playStream(stream);
-    guilds[message.guild.id].dispatcher.on('end', function() {
-      guilds[message.guild.id].skipReq = 0;
-      guilds[message.guild.id].skippers = [];
-      guilds[message.guild.id].queue.shift();
-      guilds[message.guild.id].queueNames.shift();
-      if (guilds[message.guild.id].queue.length === 0) {
-        guilds[message.guild.id].queue = [];
-        guilds[message.guild.id].queueNames = [];
-        guilds[message.guild.id].isPlaying = false;
-        guilds[message.guild.id].connection.disconnect();
-      } else {
-        setTimeout(function() {
-          playMusic(guilds[message.guild.id].queue[0], message);
-        }, 500);
-      }
-    });
-  });
-}
-
-function getID(str, cb) {
-  if (isYoutube(str)) {
-    cb(getYouTubeID(str));
-  } else {
-    search_video(str, function(id) {
-      cb(id);
-    });
-  }
-}
-
-function add_to_queue(strID, message) {
-  if (isYoutube(strID)) {
-    guilds[message.guild.id].queue.push(getYouTubeID(strID));
-  } else {
-    guilds[message.guild.id].queue.push(strID);
-  }
-}
-
-function search_video(query, callback) {
-  request("https://www.googleapis.com/youtube/v3/search?part=id&type=video&q=" + encodeURIComponent(query) + "&key=" + process.env.API_KEY, function(error, response, body) {
-    var json = JSON.parse(body);
-    if (!json.items[0]) callback("3_-a9nVZYjk");
-    else {
-      callback(json.items[0].id.videoId);
-    }
-  });
-}
-
-function isYoutube(str) {
-  return str.toLowerCase().indexOf("youtube.com") > -1;
-}
