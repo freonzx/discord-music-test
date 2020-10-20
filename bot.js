@@ -40,6 +40,7 @@ client.on('message', async message => {
   const msgcmd = message.content.split(' ')[0].slice(prefix.length);
   const args = message.content.split(' ').slice(1).join(" ");
 
+  //Handling Private messages sent to the bot
   if (message.channel.type === 'dm') {
     if (message.author.equals(client.user)) return;
     else {

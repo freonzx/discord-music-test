@@ -80,12 +80,12 @@ module.exports.run = async (bot, message, args, cmd) => {
         message.channel.send(message2);
           break;
 
-        case 'leave':
+        /*case 'leave':
         guilds[message.guild.id].queue = [];
         guilds[message.guild.id].queueNames = [];
         guilds[message.guild.id].isPlaying = false;
         guilds[message.guild.id].voiceChannel.leave();
-          break;
+          break;*/
     default:
 
   }

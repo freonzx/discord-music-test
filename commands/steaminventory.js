@@ -50,10 +50,9 @@ module.exports.run = async (bot, message, args, cmd) => {
     //return items
   }
   getInventory().catch(e => {
-    console.error(e);
+    console.error(e.statusCode + ' : ' + e.statusMessage);
     message.channel.send('DEU MUITO RUIM MANO, FBI TÁ ATRÁS DA GENTE AGORA CARALHO \n( HTTPError: Response code 429 (Too Many Requests) )');
   });
-  message.channel.send('Se eu não enviar nada é porque deu ruim, geralmente demoro 30 sec.')
 }
 
 module.exports.help = {

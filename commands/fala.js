@@ -74,7 +74,7 @@ module.exports.run = async (bot, message, args, cmd) => {
           image: {
             url: "http://pm1.narvii.com/6833/9ccf3958e8a1d7bbd992c8f5146fe29be4cc7d30v2_00.jpg"
           },
-          description: "Não vai mesmo bro."
+          description: "TENTA ME BUGAR AGORA AI BRO, VOCÊ É BOBÃO BRO"
         }
       });
       break;
